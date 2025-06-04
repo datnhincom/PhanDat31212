@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng dụng Chat An toàn</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f4f7fa;
+        }
+        .container {
+            margin-top: 50px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        #messages {
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        .sent {
+            text-align: right;
+            color: blue;
+        }
+        .received {
+            text-align: left;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Ứng dụng Chat An toàn</h1>
+        <div id="messages"></div>
+        <input id="input" type="text" class="form-control" placeholder="Nhập tin nhắn" />
+        <input id="key" type="text" class="form-control mt-2" placeholder="Nhập mã khóa" />
+        <button id="send" class="btn btn-primary mt-2">Gửi</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        const socket = io();
+
+        document.getElementById('send').onclick = () => {
+            const message = document.getElementById('input').value;
+            const key = document.getElementById('key').value;
+            if (message && key) {
+                socket.emit('send_message', { message: message, key: key });
+                document.getElementById('messages').innerHTML += `<div class="message sent">${message}</div>`;
+                document.getElementById('input').value = '';
+            }
+        };
+
+        socket.on('receive_message', (data) => {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', 'received');
+            messageDiv.innerHTML = `Tin nhắn mới: <span class="encrypted">${data.encrypted_message}</span>`;
+            document.getElementById('messages').appendChild(messageDiv);
+
+            // Tạo ô nhập mã khóa để xem tin nhắn
+            const decryptKey = prompt("Nhập mã khóa để xem tin nhắn:");
+            socket.emit('decrypt_message', { encrypted_message: data.encrypted_message, key: decryptKey, sid: socket.id });
+        });
+
+        socket.on('decrypted_message', (data) => {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', 'received');
+            messageDiv.innerHTML = `Tin nhắn: ${data.decrypted_message}`;
+            document.getElementById('messages').appendChild(messageDiv);
+        });
+    </script>
+</body>
+</html>
